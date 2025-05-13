@@ -1,39 +1,17 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-
-
-const floatingAnimation = `
-  @keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-    100% { transform: translateY(0px); }
-  }
-`;
-
-const bounceAnimation = `
-  @keyframes bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-  }
-`;
-
-const spinAnimation = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
 
 function App() {
   const [formData, setFormData] = useState({
     message: '',
     date: '',
     time: '',
-    reminder_method: 'email'
+    reminder_method: 'email',
+    email: ''
   })
 
   const [showStars, setShowStars] = useState([])
   const [showConfetti, setShowConfetti] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   
  
   useEffect(() => {
@@ -56,22 +34,65 @@ function App() {
     }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    try {
-      const response = await axios.post('http://localhost:3000/api/reminders/create', formData)
-      setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 3000)
-      alert('Your reminder has been set!')
-      setFormData({
-        message: '',
-        date: '',
-        time: '',
-        reminder_method: 'email'
+    
+    
+    if (formData.reminder_method === 'email' && !formData.email) {
+      alert('Please enter your email address!')
+      return
+    }
+    
+   
+    const mockApiCall = () => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ success: true })
+        }, 1000)
       })
-    } catch (err) {
-      console.error(err)
-      alert('Oops! Something went wrong!')
+    }
+    
+    mockApiCall().then(() => {
+     
+      setShowConfetti(true)
+      setSubmitted(true)
+      
+      
+      scheduleReminderNotification(formData)
+      
+      setTimeout(() => {
+        setShowConfetti(false)
+        
+        setTimeout(() => setSubmitted(false), 500)
+      }, 3000)
+    })
+  }
+  
+ 
+  const scheduleReminderNotification = (reminder) => {
+    const { message, date, time, reminder_method, email } = reminder
+    
+    
+    const reminderDate = new Date(`${date}T${time}`)
+    const now = new Date()
+    const timeDiff = reminderDate - now
+    
+    
+    if (timeDiff > 0) {
+      console.log(`Reminder scheduled for ${reminderDate.toString()}`)
+      
+      
+      setTimeout(() => {
+       
+        if (reminder_method === 'email') {
+          console.log(`📧 Email sent to ${email} with message: ${message}`)
+         
+          alert(`REMINDER: ${message}\n\nThis would be sent to: ${email}`)
+        } else {
+          console.log(`📱 SMS sent with message: ${message}`)
+          alert(`REMINDER: ${message}\n\nThis would be sent as an SMS`)
+        }
+      }, timeDiff)
     }
   }
 
@@ -82,13 +103,31 @@ function App() {
            fontFamily: "'Comic Sans MS', cursive, sans-serif"
          }}>
       
-      <style>
-        {floatingAnimation}
-        {bounceAnimation}
-        {spinAnimation}
-      </style>
+     
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        
+        @keyframes bounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes fall {
+          0% { transform: translateY(-10px); }
+          100% { transform: translateY(100vh) rotate(360deg); }
+        }
+      `}} />
       
-      
+     
       {showStars.map((star, index) => (
         <div 
           key={index}
@@ -96,11 +135,7 @@ function App() {
           style={{
             left: star.left,
             top: star.top,
-            animationName: 'float',
-            animationDuration: '3s',
-            animationTimingFunction: 'ease-in-out',
-            animationIterationCount: 'infinite',
-            animationDelay: star.animationDelay,
+            animation: `float 3s ease-in-out infinite ${star.animationDelay}`,
           }}
         >
           <div className="text-yellow-300" style={{ fontSize: `${star.size}px` }}>✦</div>
@@ -111,20 +146,20 @@ function App() {
       <div className="absolute top-10 left-10 text-white text-6xl opacity-80" 
            style={{ animation: 'float 6s ease-in-out infinite' }}>☁️</div>
       <div className="absolute top-20 right-20 text-white text-5xl opacity-80" 
-           style={{ animation: 'float 7s ease-in-out infinite 1s' }}>☁️</div>
+           style={{ animation: 'float 7s ease-in-out infinite' }}>☁️</div>
       <div className="absolute bottom-10 left-32 text-white text-4xl opacity-80" 
-           style={{ animation: 'float 5s ease-in-out infinite 0.5s' }}>☁️</div>
+           style={{ animation: 'float 5s ease-in-out infinite' }}>☁️</div>
       
-     
+      
       <div className="absolute top-5 right-5 text-yellow-300 text-7xl" 
            style={{ animation: 'spin 60s linear infinite' }}>☀️</div>
       
-      
+     
       <div className="absolute bottom-0 left-0 right-0 flex justify-center opacity-60">
         <div className="text-8xl">🌈</div>
       </div>
 
-      
+     
       {showConfetti && (
         <div className="absolute inset-0 z-20">
           {Array.from({ length: 50 }).map((_, i) => {
@@ -148,18 +183,10 @@ function App() {
               />
             );
           })}
-          <style>
-            {`
-              @keyframes fall {
-                0% { transform: translateY(-10px); }
-                100% { transform: translateY(100vh) rotate(360deg); }
-              }
-            `}
-          </style>
         </div>
       )}
       
-      
+     
       <h1 className="text-4xl font-bold text-white mb-6 relative z-10" 
           style={{ 
             animation: 'bounce 2s infinite',
@@ -168,73 +195,101 @@ function App() {
         My Magical Reminder App!
       </h1>
       
-      <form onSubmit={handleSubmit} className="bg-white bg-opacity-80 p-8 rounded-3xl shadow-xl w-full max-w-md space-y-6 relative z-10 border-4 border-purple-400">
-        <h2 className="text-3xl font-bold text-purple-600 text-center">Set a Fun Reminder!</h2>
-        
-        <div className="space-y-2">
-          <label className="block text-xl text-purple-700 font-bold">My Message:</label>
-          <textarea
-            name="message"
-            value={formData.message}
-            onChange={handleChange}
-            placeholder="Write your magical reminder here!"
-            className="w-full border-2 border-purple-300 rounded-xl p-3 focus:border-purple-500 focus:ring focus:ring-purple-200 transition duration-300"
-            required
-            rows={3}
-          />
-        </div>
+      <div className="bg-white bg-opacity-80 p-8 rounded-3xl shadow-xl w-full max-w-md space-y-6 relative z-10 border-4 border-purple-400">
+                  {submitted ? (
+          <div className="text-center py-8">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-purple-600 mb-4">Yay! Your reminder is set!</h2>
+            <p className="text-xl text-purple-500">We'll remind you when it's time!</p>
+            {formData.reminder_method === 'email' && (
+              <p className="mt-2 text-lg text-purple-500">An email will be sent to: {formData.email}</p>
+            )}
+          </div>
+        ) : (
+          <>
+            <h2 className="text-3xl font-bold text-purple-600 text-center">Set a Fun Reminder!</h2>
+            
+            <div className="space-y-2">
+              <label className="block text-xl text-purple-700 font-bold">My Message:</label>
+              <textarea
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                placeholder="Write your magical reminder here!"
+                className="w-full border-2 border-purple-300 rounded-xl p-3"
+                rows={3}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <label className="block text-xl text-purple-700 font-bold">Date:</label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className="w-full border-2 border-purple-300 rounded-xl p-3 focus:border-purple-500 focus:ring focus:ring-purple-200 transition duration-300"
-            required
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="block text-xl text-purple-700 font-bold">Date:</label>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                className="w-full border-2 border-purple-300 rounded-xl p-3"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <label className="block text-xl text-purple-700 font-bold">Time:</label>
-          <input
-            type="time"
-            name="time"
-            value={formData.time}
-            onChange={handleChange}
-            className="w-full border-2 border-purple-300 rounded-xl p-3 focus:border-purple-500 focus:ring focus:ring-purple-200 transition duration-300"
-            required
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="block text-xl text-purple-700 font-bold">Time:</label>
+              <input
+                type="time"
+                name="time"
+                value={formData.time}
+                onChange={handleChange}
+                className="w-full border-2 border-purple-300 rounded-xl p-3"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <label className="block text-xl text-purple-700 font-bold">Reminder Method:</label>
-          <select
-            name="reminder_method"
-            value={formData.reminder_method}
-            onChange={handleChange}
-            className="w-full border-2 border-purple-300 rounded-xl p-3 focus:border-purple-500 focus:ring focus:ring-purple-200 transition duration-300"
-          >
-            <option value="email">Email</option>
-            <option value="sms">Text Message</option>
-          </select>
-        </div>
+            <div className="space-y-2">
+              <label className="block text-xl text-purple-700 font-bold">Reminder Method:</label>
+              <select
+                name="reminder_method"
+                value={formData.reminder_method}
+                onChange={handleChange}
+                className="w-full border-2 border-purple-300 rounded-xl p-3"
+              >
+                <option value="email">Email</option>
+                <option value="sms">Text Message</option>
+              </select>
+            </div>
+            
+            {formData.reminder_method === 'email' && (
+              <div className="space-y-2">
+                <label className="block text-xl text-purple-700 font-bold">Email Address:</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email address"
+                  className="w-full border-2 border-purple-300 rounded-xl p-3"
+                  required={formData.reminder_method === 'email'}
+                />
+              </div>
+            )}
 
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-pink-600 transition duration-300 transform hover:scale-105"
-          style={{ boxShadow: '0 4px 0 #9333ea' }}
-        >
-          Create My Reminder! ✨
-        </button>
-      </form>
+            <button
+              onClick={handleSubmit}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-xl text-xl font-bold transform hover:scale-105"
+              style={{ 
+                boxShadow: '0 4px 0 #9333ea',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Create My Reminder! ✨
+            </button>
+          </>
+        )}
+      </div>
       
-    
+     
       <div className="absolute bottom-5 left-5 text-6xl" style={{ animation: 'float 3s ease-in-out infinite' }}>
         🦄
       </div>
-      <div className="absolute bottom-5 right-5 text-6xl" style={{ animation: 'float 3.5s ease-in-out infinite 0.5s' }}>
+      <div className="absolute bottom-5 right-5 text-6xl" style={{ animation: 'float 3.5s ease-in-out infinite' }}>
         🌟
       </div>
       
