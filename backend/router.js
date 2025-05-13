@@ -1,13 +1,16 @@
-import { Router } from "express";
-import * as rh from "./RequestHandler/user.requesthandler.js"
-import Auth from "./middleware/auth.js";
+const express = require('express');
+const router = express.Router();
+const Reminder = require('./models/remider');
 
-const router = Router();
-router.route("/adduser").post(rh.addUser);
-router.route("/login").post(rh.loginUser);
-router.route("/home").get(Auth,rh.Home);
-router.route("/update").put(Auth,rh.updateProfile);
-router.route("/forgot").post(rh.passwordRequest);
+router.post('/create', async (req, res) => {
+  try {
+    const { message, date, time, reminder_method } = req.body;
+    const newReminder = new Reminder({ message, date, time, reminder_method });
+    await newReminder.save();
+    res.status(201).json({ message: 'Reminder created successfully!' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create reminder' });
+  }
+});
 
-
-export default router;
+module.exports = router;

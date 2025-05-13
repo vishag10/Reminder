@@ -1,29 +1,23 @@
-import express, { json } from 'express';
-import env from "dotenv"
-import connection from './connection.js';
-import router from './router.js';
-import path from "path"
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-import cors from "cors"
-env.config()
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-
-const __dirname = path.dirname(__filename);
-
+const reminderRoutes = require('./router.js');
 
 const app = express();
-app.use(cors())
-app.use(express.static(path.join(__dirname, '../frontend/dist')))
-// app.get("*",(req,res)=>{
-//     res.status(200).sendFile(path.join(__dirname,"../frontend/dist/index.html"))
-// })
-app.use(express.json({limit:"100mb"}))
-app.use("/api",router)
+app.use(cors());
+app.use(express.json());
+app.use('/api/reminders', reminderRoutes);
 
-connection().then(()=>{
-    app.listen(process.env.PORT,()=>{
-        console.log(`server started on port http://localhost:${process.env.PORT}`)
-    })
-})
+
+const mongoUri = `${process.env.DB_URL}${process.env.DB_NAME}`;
+
+
+mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    app.listen(process.env.PORT, () => console.log(`🚀 Server running on port ${process.env.PORT}`));
+  })
+  .catch(err => console.error('❌ MongoDB connection failed:', err));
